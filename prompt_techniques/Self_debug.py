@@ -45,6 +45,14 @@ class SelfdebugGenerator(BaseGenerator):
     {test}
     '''
 
+    LiveCodeBench_SelfDebug_init_prompt = '''
+      Complete the following task in Python:
+      {prompt}
+
+      Your code should pass the test input/output and type. If type is functional, ensure the function is named {function_name}:
+      {test}
+      '''
+
     def __init__(self, dataset_name, model_name, technique_name, args):
         """
         Initializes the ZeroShotGenerator with dataset, model, and additional arguments.
@@ -59,6 +67,8 @@ class SelfdebugGenerator(BaseGenerator):
             return self.HumanEval_SelfDebug_init_prompt.format(prompt=prompt, test=utils.get_first_elements_of_inputs_and_results(test))
         elif 'MBPP' in self.dataset_name:
             return self.MBPP_SelfDebug_init_prompt.format(prompt=prompt, function_name=function_name, test=test)
+        elif 'Live' in self.dataset_name:
+            return self.LiveCodeBench_SelfDebug_init_prompt.format(prompt=prompt, test=test, function_name=function_name)
         else:
             return self.APPS_SelfDebug_init_prompt.format(prompt=prompt, test=test)
 
@@ -82,8 +92,13 @@ class SelfdebugGenerator(BaseGenerator):
                     {'role': 'system', 'content': self.system_message},
                     {'role': 'user', 'content': self.form_technique_prompt(prompt, per_data['test_list'][0], function_name)}
                 ]
-                print(message)
                 # quit()
+            elif 'Live' in self.dataset_name:
+                prompt = per_data['prompt']
+                message = [
+                    {'role': 'system', 'content': self.system_message},
+                    {'role': 'user', 'content': self.form_technique_prompt(prompt, per_data['test'], per_data['entry_point'])}
+                ]
             else:
                 prompt = per_data['prompt']
                 message = [
@@ -97,6 +112,8 @@ class SelfdebugGenerator(BaseGenerator):
     def run_model(self, message):
         if 'gpt' in self.model_name:
             return model.call_chat_gpt(message, self.args)
+        elif 'gemini' in self.model_name:
+            return model.call_gemini(message, self.args)
         else:
             return model.query_firework(message, self.args, self.model_name)
 
@@ -105,9 +122,14 @@ class SelfdebugGenerator(BaseGenerator):
 
         def run_func(message, per_data, per_original_data):
             tried = 0
-            total_input_token, total_output_token = 0, 0
+            total_input_token, total_thought_token, total_output_token = 0, 0, 0
             result = copy.copy(per_data)
-            response1, input_token, output_token = self.run_model(message)
+
+            if 'gemini' in self.model_name:
+                response1, input_token, output_token, thought_token = self.run_model(message)
+                total_thought_token += thought_token if thought_token is not None else 0
+            else:
+                response1, input_token, output_token = self.run_model(message)
             total_input_token += input_token
             total_output_token += output_token
             code = utils.process_generation_to_code(response1)
@@ -119,6 +141,29 @@ class SelfdebugGenerator(BaseGenerator):
                 elif 'MBPP' in self.dataset_name:
                     one_assert = per_data['test_list'][0]
                     passed = evaluation.MBPP_check_code('\n'.join(code), per_data['test_list'])
+                elif 'Live' in self.dataset_name:
+                    if per_data['test'] is not []:
+                        test_data = per_data['test'][0]
+                        testtype = test_data["testtype"]
+                        print(test_data)
+                    else:
+                        testtype = ''
+                        test_data = {}
+
+                    if testtype == 'stdin':
+                        passed = evaluation.check_stdin(
+                            code='\n'.join(code),
+                            input_data=test_data['input'],
+                            expected_output=test_data['output'],
+                        )
+                    elif testtype == "functional":
+                        passed = evaluation.check_functional(
+                            code='\n'.join(code),
+                            test_data=test_data,
+                        )
+                    else:
+                        test_code = per_data['test'].replace('candidate', 'solution')
+                        passed = evaluation.check_livecodebench('\n'.join(code), test_code)
                 else:
                     one_assert = per_data['test'].split('\n')[3].strip().replace('candidate', 'solution')
                     passed = evaluation.check_apps('\n'.join(code), one_assert)
@@ -127,7 +172,11 @@ class SelfdebugGenerator(BaseGenerator):
                         {'role': 'system', 'content': self.system_message},
                         {'role': 'user', 'content': self.SelfDebug_success_prompt.format(code='\n'.join(code))}
                     ]
-                    response2, input_token, output_token = self.run_model(debug_message)
+                    if 'gemini' in self.model_name:
+                        response2, input_token, output_token, thought_token = self.run_model(debug_message)
+                        total_thought_token += thought_token if thought_token is not None else 0
+                    else:
+                        response2, input_token, output_token = self.run_model(debug_message)
                     total_input_token += input_token
                     total_output_token += output_token
                     code = utils.process_generation_to_code(response2)
@@ -137,32 +186,38 @@ class SelfdebugGenerator(BaseGenerator):
                         {'role': 'system', 'content': self.system_message},
                         {'role': 'user', 'content': self.SelfDebug_failed_prompt.format(code='\n'.join(code))}
                     ]
-                    response2, input_token, output_token = self.run_model(debug_message)
+                    if 'gemini' in self.model_name:
+                        response2, input_token, output_token, thought_token = self.run_model(debug_message)
+                        total_thought_token += thought_token if thought_token is not None else 0
+                    else:
+                        response2, input_token, output_token = self.run_model(debug_message)
                     total_input_token += input_token
                     total_output_token += output_token
                     code = utils.process_generation_to_code(response2)
                     tried += 1
-    
+
             result['response_code'] = '\n'.join(code)
             result['input_token'] = total_input_token
             result['output_token'] = total_output_token
+
+            if 'gemini' in self.model_name:
+                result['thought_token'] = total_thought_token
+
+            print('success!')
             return result
 
         responses = []
 
         # Run generation concurrently
-        with cfuts.ThreadPoolExecutor(max_workers=32) as executor:
-            futs = []
-            for idx, per_data in enumerate(data):
-                futs.append(executor.submit(run_func, messages[idx], per_data, original_data[idx]))
+        with cfuts.ThreadPoolExecutor(max_workers=10) as executor:
+            futs = {executor.submit(run_func, messages[idx], per_data, original_data[idx]): idx
+                    for idx, per_data in enumerate(data)}
 
             for future in tqdm(cfuts.as_completed(futs), total=len(futs)):
-                responses.append(future.result())
-
-        # Sort results by task_id if it exists in your dataset
-        responses.sort(key=lambda x: int(x['task_id']))
-
-        # Write out to a JSON lines file
-        with open(output_path, 'a') as f:
-            for res in responses:
-                f.write(json.dumps(res) + "\n")
+                idx = futs[future]
+                try:
+                    result = future.result(timeout=300)
+                    with open(output_path, "a") as f:
+                        f.write(json.dumps(result) + "\n")
+                except Exception as e:
+                    print(f"[ERROR] idx={idx} run_func failed: {e}")

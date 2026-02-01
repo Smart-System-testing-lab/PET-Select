@@ -67,6 +67,8 @@ class ZeroshotGenerator(BaseGenerator):
     def run_model(self, message):
         if 'gpt' in self.model_name:
             return model.call_chat_gpt(message, self.args)
+        elif 'gemini' in self.model_name:
+            return model.call_gemini(message, self.args)
         else:
             return model.query_firework(message, self.args, self.model_name)
 
@@ -76,7 +78,11 @@ class ZeroshotGenerator(BaseGenerator):
         def run_func(message, per_data):
             result = copy.copy(per_data)
             # print(self.run_model(message))
-            response, input_token, output_token = self.run_model(message)
+            if 'gemini' in self.model_name:
+                response, input_token, output_token, thought_token = self.run_model(message)
+                result['thought_token'] = thought_token if not None else 0
+            else:
+                response, input_token, output_token = self.run_model(message)
             code = utils.process_generation_to_code(response)
             result['response_code'] = '\n'.join(code)
             result['input_token'] = input_token
@@ -86,7 +92,7 @@ class ZeroshotGenerator(BaseGenerator):
         responses = []
 
         # Run generation concurrently
-        with cfuts.ThreadPoolExecutor(max_workers=32) as executor:
+        with cfuts.ThreadPoolExecutor(max_workers=16) as executor:
             futs = []
             for idx, per_data in enumerate(data):
                 futs.append(executor.submit(run_func, messages[idx], per_data))
