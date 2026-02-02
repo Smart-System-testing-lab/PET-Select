@@ -54,3 +54,5 @@ typing-extensions
 urllib3
 xxhash
 yarl
+openai
+google-genai
