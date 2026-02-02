@@ -1,6 +1,8 @@
 import copy
 import concurrent.futures as cfuts
 import json
+from types import NoneType
+
 from tqdm import tqdm
 
 from src import utils
@@ -274,6 +276,8 @@ Please complete the task with the following steps in Python.
     def run_model(self, message):
         if 'gpt' in self.model_name:
             return model.call_chat_gpt(message, self.args)
+        elif 'gemini' in self.model_name:
+            return model.call_gemini(message, self.args)
         else:
             return model.query_firework(message, self.args, self.model_name)
 
@@ -281,9 +285,14 @@ Please complete the task with the following steps in Python.
         output_path = f'result/model_result/{self.dataset_name}_{self.technique_name}_{self.model_name}.jsonl'
 
         def run_func(message, per_data):
-            total_input_token, total_output_token = 0, 0
+            total_input_token, total_output_token, total_thought_token = 0, 0, 0
             result = copy.copy(per_data)
-            response1, input_token, output_token = self.run_model(message)
+
+            if 'gemini' in self.model_name:
+                response1, input_token, output_token, thought_token = self.run_model(message)
+                total_thought_token += thought_token if thought_token is not None else 0
+            else:
+                response1, input_token, output_token = self.run_model(message)
             total_input_token += input_token
             total_output_token += output_token
             
@@ -302,14 +311,21 @@ Please complete the task with the following steps in Python.
                     {'role': 'system', 'content': self.system_message},
                     {'role': 'user', 'content': self.APPS_implementation_prompt.format(prompt=per_data['prompt'], plan=response1)}
                 ]
-            
-            response2, input_token, output_token = self.run_model(implement_message)
+
+            if 'gemini' in self.model_name:
+                response2, input_token, output_token, thought_token = self.run_model(message)
+                total_thought_token += thought_token if not None else 0
+            else:
+                response2, input_token, output_token = self.run_model(message)
+
             total_input_token += input_token
             total_input_token += output_token
             code = utils.process_generation_to_code(response2)
             result['response_code'] = '\n'.join(code)
             result['input_token'] = total_input_token
             result['output_token'] = total_output_token
+            if 'gemini' in self.model_name:
+                result['thought_token'] = total_thought_token
             return result
 
         responses = []

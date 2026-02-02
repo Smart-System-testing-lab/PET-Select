@@ -26,21 +26,21 @@ This repository provides the implementation of PET-Select.
 
 ## Usage
 
-You can run the dataset for each prompt engineering technique using:
+Please ensure that all dependencies have been installed prior to replicating our experiment. You can run the dataset for each prompt engineering technique using:
 
 ### **Arguments**  
 
-| Argument           | Type  | Default Value                  | Description |
-|--------------------|------|--------------------------------|-------------|
-| `--dataset`       | str  | `'HumanEval'`                  | Name of the dataset to use. Options: `HumanEval`, `HumanEval+`, `MBPP`, `MBPP+`, `APPS`. |
-| `--model`         | str  | `'gpt-3.5-turbo-0125'`         | Name of the LLM model to use. Options: `gpt-3.5-turbo`, `gpt-4o`, `DeepSeek-V3`, etc. |
-| `--temperature`   | int  | `0.0`                          | Sampling temperature for the model. Higher values (e.g., `0.7`) produce more randomness in responses. |
-| `--append`        | flag | `False`                        | If specified, appends results instead of overwriting them. |
-| `--max_tokens`    | int  | `512`                          | Maximum number of tokens in the model's output. |
-| `--system_message`| str  | `''`                           | Optional system message to guide the model's behavior. |
-| `--start`         | int  | `0`                            | Starting index for processing dataset samples. Useful for running a subset of the dataset. |
-| `--end`           | int  | `0`                            | Ending index for processing dataset samples. Use `0` to process all samples. |
-| `--technique`     | str  | `'Zeroshot'`                   | Prompt engineering technique to use. Options: `Zeroshot`, `Fewshot`, `CoT`, etc. |
+| Argument           | Type  | Default Value                  | Description                                                                                                      |
+|--------------------|------|--------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `--dataset`       | str  | `'HumanEval'`                  | Name of the dataset to use. Options: `HumanEval`, `HumanEval_plus`, `MBPP`, `MBPP_plus`, `APPS` `LiveCodeBench`. |
+| `--model`         | str  | `'gpt-3.5-turbo-0125'`         | Name of the LLM model to use. Options: `gpt-3.5-turbo`, `gpt-4o`, `DeepSeek-V3`, `gemini`, etc.                   |
+| `--temperature`   | int  | `0.0`                          | Sampling temperature for the model. Higher values (e.g., `0.7`) produce more randomness in responses.            |
+| `--append`        | flag | `False`                        | If specified, appends results instead of overwriting them.                                                       |
+| `--max_tokens`    | int  | `512`                          | Maximum number of tokens in the model's output.                                                                  |
+| `--system_message`| str  | `''`                           | Optional system message to guide the model's behavior.                                                           |
+| `--start`         | int  | `0`                            | Starting index for processing dataset samples. Useful for running a subset of the dataset.                       |
+| `--end`           | int  | `0`                            | Ending index for processing dataset samples. Use `0` to process all samples.                                     |
+| `--technique`     | str  | `'Zeroshot'`                   | Prompt engineering technique to use. Options: `Zeroshot`, `Fewshot`, `CoT`, etc.                                 |
 
 
 Example:

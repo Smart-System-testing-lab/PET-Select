@@ -1,6 +1,6 @@
-from parse_dataset import parse_HumanEval, parse_HumanEval_plus, parse_MBPP, parse_MBPP_plus, parse_APPS
+from parse_dataset import parse_LiveCodeBench, parse_HumanEval, parse_HumanEval_plus, parse_MBPP, parse_MBPP_plus, parse_APPS
 from src.args import get_args
-from prompt_techniques import Zeroshot, Zeroshot_CoT, Fewshot, Fewshot_CoT, Persona, Self_planning, Self_refine, Progressive_Hint, Self_debug, Topic
+from prompt_techniques import Zeroshot, Zeroshot_CoT, Fewshot, Fewshot_CoT, Persona, Self_planning, Self_refine, Progressive_Hint, Self_debug
 import json
 
 def main(args):
@@ -27,6 +27,9 @@ def main(args):
     if dataset_name == 'APPS':
         dataset = parse_APPS.load_apps_dataset()
         original_data = list(map(json.loads, open('dataset/APPS.jsonl')))
+    if dataset_name == 'LiveCodeBench':
+        dataset = parse_LiveCodeBench.load_LiveCodeBench_dataset()
+        original_data = list(map(json.loads, open('dataset/APPS.jsonl')))
 
     if technique_name == 'Zeroshot':
         technique_generator = Zeroshot.ZeroshotGenerator(dataset_name, model_name, technique_name, args) 
@@ -46,9 +49,8 @@ def main(args):
         technique_generator = Progressive_Hint.ProgressiveHintGenerator(dataset_name, model_name, technique_name, args)
     elif technique_name == 'Self-debug':
         technique_generator = Self_debug.SelfdebugGenerator(dataset_name, model_name, technique_name, args)
-    elif technique_name == 'Topic':
-        technique_generator = Topic.TopicGenerator(dataset_name, model_name, technique_name, args)
-
+    else:
+        raise Exception("Incorrect technique. Select a valid option!")
         
     start = 0 if args.start == 0 else args.start
     end = len(dataset) if args.end == 0 else args.end
