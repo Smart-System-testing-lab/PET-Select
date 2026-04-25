@@ -350,6 +350,134 @@ Here is your task:
 {prompt}
 '''
 
+    LiveCodeBench_Fewshot_CoT_prompt = '''
+        Here are some examples of how to generate the code step by step. Please pay close attention to the provided code signature in the task, as it may require a class method, a standalone function, or standard I/O parsing.
+
+        Task Example 1:
+
+        Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.
+        You may assume that each input would have exactly one solution, and you may not use the same element twice.
+        You can return the answer in any order.
+        
+        Task Example 1 Solution:
+        
+        ```python
+        from typing import List
+
+        class Solution:
+            def twoSum(self, nums: List[int], target: int) -> List[int]:
+                # 1. Initialize a dictionary to store the numbers we have seen and their indices
+                num_map = {{}}
+
+                # 2. Iterate over the array of numbers with their corresponding index
+                for i, num in enumerate(nums):
+                    # 3. Calculate the complement required to reach the target sum
+                    complement = target - num
+
+                    # 4. Check if we have already seen this complement in our dictionary
+                    if complement in num_map:
+                        # 5. If found, return the index of the complement and the current index
+                        return [num_map[complement], i]
+
+                    # 6. Otherwise, store the current number and its index in the dictionary for future lookups
+                    num_map[num] = i
+
+                # 7. Return an empty list if no solution is found (fallback)
+                return []
+        ```
+
+        Task Example 2:
+
+        Anton has the integer x. He is interested what positive integer, which doesn't exceed x, has the maximum sum of digits.
+
+        Your task is to help Anton and to find the integer that interests him. If there are several such integers, determine the biggest of them. 
+
+        -----Input-----
+        The first line contains the positive integer x (1 ≤ x ≤ 10^18) — the integer which Anton has. 
+
+        -----Output-----
+        Print the positive integer which doesn't exceed x and has the maximum sum of digits. If there are several such integers, print the biggest of them. Printed integer must not contain leading zeros.
+        
+        Task Example 2 Solution:
+        
+        ```python
+        def solution(stdin: str) -> str:
+            # 1. Read and convert the input string to an integer x
+            x = int(stdin.strip())
+
+            # 2. Define a helper function to calculate the sum of digits of a number
+            def sum_of_digits(n):
+                return sum(int(d) for d in str(n))
+
+            # 3. Initialize max_sum to the sum of digits of x, and result to x (baseline)
+            max_sum = sum_of_digits(x)
+            result = x
+
+            # 4. Convert x to a string to more easily manipulate individual digits
+            x_str = str(x)
+            n = len(x_str)
+
+            # 5. Loop through each digit of x_str
+            for i in range(n):
+                # Skip if the current digit is '0' because reducing it doesn't make sense
+                if x_str[i] == '0':
+                    continue
+
+                # 6. Construct a "candidate" number by taking digits up to i unchanged,
+                #    reducing the i-th digit by 1, and replacing all subsequent digits with '9'
+                new_number = int(x_str[:i] + str(int(x_str[i]) - 1) + '9' * (n - i - 1))
+
+                # 7. Calculate the sum of digits of this new candidate
+                current_sum = sum_of_digits(new_number)
+
+                # 8. If the new candidate has a larger digit sum, or ties the digit sum but is numerically larger, update
+                if current_sum > max_sum or (current_sum == max_sum and new_number > result):
+                    max_sum = current_sum
+                    result = new_number
+
+            # 9. Return the best candidate as a string
+            return str(result)
+        ```
+
+        Task Example 3:
+ 
+        Write a function that takes a string and returns the length of the longest substring without repeating characters.
+
+        
+        Task Example 3 Solution:
+        
+        ```python
+        def lengthOfLongestSubstring(s: str) -> int:
+            # 1. Initialize a set to keep track of unique characters in the current substring window
+            char_set = set()
+
+            # 2. Initialize a left pointer for the sliding window and a variable to store the maximum length
+            left = 0
+            max_length = 0
+
+            # 3. Iterate through the string using a right pointer to expand the window
+            for right in range(len(s)):
+                # 4. If the character at the right pointer is already in the set, we have a repeating character.
+                #    We must shrink the window from the left until the duplicate character is removed.
+                while s[right] in char_set:
+                    char_set.remove(s[left])
+                    left += 1
+
+                # 5. Add the current character at the right pointer to the set
+                char_set.add(s[right])
+
+                # 6. Calculate the length of the current valid window and update max_length if it's larger
+                max_length = max(max_length, right - left + 1)
+
+            # 7. Return the maximum length found
+            return max_length
+        ```
+
+        How about this task?
+        Here is your task: 
+        {prompt}
+        '''
+
 
     def __init__(self, dataset_name, model_name, technique_name, args):
         """
@@ -365,6 +493,8 @@ Here is your task:
             return self.HumanEval_Fewshot_prompt.format(prompt=prompt)
         elif 'MBPP' in self.dataset_name:
             return self.MBPP_Fewshot_CoT_prompt.format(prompt=prompt, function_name=function_name)
+        elif 'Live' in self.dataset_name:
+            return self.LiveCodeBench_Fewshot_CoT_prompt.format(prompt=prompt, function_name=function_name)
         else:
             return self.APPS_Fewshot_CoT_prompt.format(prompt=prompt)
 

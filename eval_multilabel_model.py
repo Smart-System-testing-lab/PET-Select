@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # multi_label_inference.py
 
+from collections import Counter
 import json
 import tqdm
 import torch
@@ -90,17 +91,6 @@ def evaluate_top3_accuracy_and_tokens(
     technique_dict,
     top_k=9
 ):
-    """
-    1) For each sample, pick the top_k techniques by predicted probability.
-    2) Mark the sample as 'correct' if any of the top_k is in the successful set (exec_acc >= 0).
-    3) Sum tokens for those top_k predictions for each sample, then average.
-    
-    Returns:
-      overall_acc (float): fraction of samples with at least one correct technique in top_k
-      per_tech_acc (dict): for each technique, fraction of samples where it was predicted AND was successful
-      avg_pred_tokens (float): average total tokens used by top_k predicted techniques
-      per_tech_avg_tokens (dict): if we sum tokens for that technique across all samples, then / total
-    """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.eval()
     model.to(device)
@@ -119,8 +109,6 @@ def evaluate_top3_accuracy_and_tokens(
         topk_values, topk_indices = torch.topk(probs, k=top_k, dim=1)  
 
     total_samples = len(data_list)
-
-    # 2) Track how many samples are correct
     correct_samples = 0
 
     # 3) For per-technique correctness and token usage
@@ -139,15 +127,12 @@ def evaluate_top3_accuracy_and_tokens(
         token_record = per_data['token_record']  # {strategy_name: token_count}
 
         # Build "successful" set from ranked_techniques
-        # i.e., techniques with exec_acc >= 0
         successful_techniques = set()
         for (exec_strategy, exec_acc) in per_data['ranked_techniques']:
             if exec_acc >= 0:
                 successful_techniques.add(exec_strategy)
                 if exec_strategy in pred_strategies:
                     sample_pred_token_record.append(token_record[exec_strategy])
-                    # correct_samples += 1
-
 
         print(pred_strategies)
         # print(successful_techniques)
@@ -196,19 +181,23 @@ def evaluate_top3_accuracy_and_tokens(
 # ----------------------------- #
 # 3) Example "main" usage
 # ----------------------------- #
+import argparse
 if __name__ == "__main__":
-    arguments = args.get_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test_file", type=str, required=True)
+    args = parser.parse_args()
     # Example usage (you can replace paths with your own)
     set_seed(42)
 
     # Suppose your multi-label model is saved at this path:
-    model_path_embedding = "PET_model_result/code_complex_contrastive_model"
-    model_path_classification = "PET_model_result/classification_model/multilabel_code_complex_classification_model_parameters.pth"
-    top_k = arguments.top_k
+    model_path_embedding = "/PET-Select/PET_model_result /code_complex_contrastive_model"
+    model_path_classification = "/PET-Select/PET_model_result /classification_model/multilabel_code_complex_classification_model_parameters2.pth"
+    top_k = 1
 
     # Load test data from JSONL
-    test_file_path = "PET_model_dataset/code_complex_classification_dataset_test.jsonl"
-    with open(test_file_path, "r") as f:
+    #test_file_path = "PET_model_dataset/code_complex_classification_dataset_test.jsonl"
+    test_file_path = 'result/model_result_acc/APPS_deepseek-v3.jsonl'
+    with open(args.test_file, "r") as f:
         test_data = [json.loads(line) for line in f]
 
     # Create multi-label model and load parameters

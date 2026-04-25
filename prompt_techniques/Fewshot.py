@@ -301,6 +301,97 @@ Here is your task:
 {prompt}
 '''
 
+    LiveCodeBench_Fewshot_prompt = '''
+    Here are some examples of how to generate the code. Please pay close attention to the provided code signature in the task, as it may require a class method, a standalone function, or standard I/O parsing.
+
+
+    Task Example 1: 
+    Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.
+    You may assume that each input would have exactly one solution, and you may not use the same element twice.
+    You can return the answer in any order.
+    
+    Task Example 1 Solution:
+
+    ```python
+    from typing import List
+
+    class Solution:
+        def twoSum(self, nums: List[int], target: int) -> List[int]:
+            num_map = {{}}
+            for i, num in enumerate(nums):
+                complement = target - num
+                if complement in num_map:
+                    return [num_map[complement], i]
+                num_map[num] = i
+            return []
+    ```
+
+    Task Example 2:
+
+    Anton has the integer x. He is interested what positive integer, which doesn't exceed x, has the maximum sum of digits.
+
+    Your task is to help Anton and to find the integer that interests him. If there are several such integers, determine the biggest of them. 
+
+    -----Input-----
+    The first line contains the positive integer x (1 ≤ x ≤ 10^18) — the integer which Anton has. 
+
+    -----Output-----
+    Print the positive integer which doesn't exceed x and has the maximum sum of digits. If there are several such integers, print the biggest of them. Printed integer must not contain leading zeros.
+    
+    Task Example 2 Solution:
+    
+    ```python
+    def solution(stdin: str) -> str:
+        x = int(stdin.strip())
+        
+        def sum_of_digits(n):
+            return sum(int(d) for d in str(n))
+        
+        max_sum = sum_of_digits(x)
+        result = x
+        x_str = str(x)
+        n = len(x_str)
+        
+        for i in range(n):
+            if x_str[i] == '0':
+                continue
+            new_number = int(x_str[:i] + str(int(x_str[i]) - 1) + '9' * (n - i - 1))
+            current_sum = sum_of_digits(new_number)
+            
+            if current_sum > max_sum or (current_sum == max_sum and new_number > result):
+                max_sum = current_sum
+                result = new_number
+        
+        return str(result)
+    ```
+
+    Task Example 3:
+ 
+    Write a function that takes a string and returns the length of the longest substring without repeating characters.
+
+    Task Example 3 Solution:
+    
+    ```python
+    def lengthOfLongestSubstring(s: str) -> int:
+        char_set = set()
+        left = 0
+        max_length = 0
+        
+        for right in range(len(s)):
+            while s[right] in char_set:
+                char_set.remove(s[left])
+                left += 1
+            char_set.add(s[right])
+            max_length = max(max_length, right - left + 1)
+            
+        return max_length
+    ```
+
+    How about this task?
+    Here is your task: 
+    {prompt}
+    '''
+
     def __init__(self, dataset_name, model_name, technique_name, args):
         """
         Initializes the ZeroShotGenerator with dataset, model, and additional arguments.
@@ -315,6 +406,8 @@ Here is your task:
             return self.HumanEval_Fewshot_prompt.format(prompt=prompt)
         elif 'MBPP' in self.dataset_name:
             return self.MBPP_Fewshot_prompt.format(prompt=prompt, function_name=function_name)
+        elif 'Live' in self.dataset_name:
+            return self.LiveCodeBench_Fewshot_prompt.format(prompt=prompt)
         else:
             return self.APPS_Fewshot_prompt.format(prompt=prompt)
 

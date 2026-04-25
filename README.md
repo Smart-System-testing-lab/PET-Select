@@ -30,22 +30,22 @@ Please ensure that all dependencies have been installed prior to replicating our
 
 ### **Arguments**  
 
-| Argument           | Type  | Default Value                  | Description                                                                                                      |
-|--------------------|------|--------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `--dataset`       | str  | `'HumanEval'`                  | Name of the dataset to use. Options: `HumanEval`, `HumanEval_plus`, `MBPP`, `MBPP_plus`, `APPS` `LiveCodeBench`. |
-| `--model`         | str  | `'gpt-3.5-turbo-0125'`         | Name of the LLM model to use. Options: `gpt-3.5-turbo`, `gpt-4o`, `DeepSeek-V3`, `gemini`, etc.                   |
-| `--temperature`   | int  | `0.0`                          | Sampling temperature for the model. Higher values (e.g., `0.7`) produce more randomness in responses.            |
-| `--append`        | flag | `False`                        | If specified, appends results instead of overwriting them.                                                       |
-| `--max_tokens`    | int  | `512`                          | Maximum number of tokens in the model's output.                                                                  |
-| `--system_message`| str  | `''`                           | Optional system message to guide the model's behavior.                                                           |
-| `--start`         | int  | `0`                            | Starting index for processing dataset samples. Useful for running a subset of the dataset.                       |
-| `--end`           | int  | `0`                            | Ending index for processing dataset samples. Use `0` to process all samples.                                     |
-| `--technique`     | str  | `'Zeroshot'`                   | Prompt engineering technique to use. Options: `Zeroshot`, `Fewshot`, `CoT`, etc.                                 |
+| Argument           | Type  | Default Value | Description                                                                                                                                                             |
+|--------------------|------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--dataset`       | str  | `'APPS'`      | Name of the dataset to use. Options: `APPS`, `LiveCodeBench`, `BigCodeBench`, etc.                                                                                      |
+| `--model`         | str  | `'gpt-4o'`    | Name of the LLM model to use. Options: `gpt-4o`, `DeepSeek-V3`, `gemini`, etc.                                                                                          |
+| `--temperature`   | int  | `0.0`         | Sampling temperature for the model. Higher values (e.g., `0.7`) produce more randomness in responses.<br/>Note, Gemini has a temperature of 1 for optimal functionality |
+| `--append`        | flag | `False`       | If specified, appends results instead of overwriting them.                                                                                                              |
+| `--max_tokens`    | int  | `4096`        | Maximum number of tokens in the model's output.                                                                                                                         |
+| `--system_message`| str  | `''`          | Optional system message to guide the model's behavior.                                                                                                                  |
+| `--start`         | int  | `0`           | Starting index for processing dataset samples. Useful for running a subset of the dataset.                                                                              |
+| `--end`           | int  | `0`           | Ending index for processing dataset samples. Use `0` to process all samples.                                                                                            |
+| `--technique`     | str  | `'Zeroshot'`  | Prompt engineering technique to use. Options: `Zeroshot`, `Fewshot`, `CoT`, etc.                                                                                        |
 
 
 Example:
 ```bash
-python main.py --dataset HumanEval --model gpt-3.5-turbo --technique Zeroshot
+python main.py --dataset APPS --model gpt-4o --technique Zeroshot
 ```
 
 
